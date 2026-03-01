@@ -1,0 +1,908 @@
+<!-- save as: healthcare_workflows_lesson.html  (open in browser) -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Healthcare Analytics Workflows (Pandas + Plotly) — Lesson</title>
+  <link rel="preconnect" href="https://cdn.plot.ly" />
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#0f1732;
+      --muted:#93a4c7;
+      --text:#e9eefc;
+      --border:#1c2a55;
+      --accent:#7aa2ff;
+      --accent2:#63e6be;
+      --warn:#ff6b6b;
+      --ok:#51cf66;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(122,162,255,.20), transparent 60%),
+        radial-gradient(900px 500px at 90% 0%, rgba(99,230,190,.18), transparent 55%),
+        radial-gradient(900px 700px at 50% 120%, rgba(255,107,107,.10), transparent 60%),
+        var(--bg);
+      color:var(--text);
+    }
+    header{
+      padding:28px 18px 10px;
+      max-width:1200px;
+      margin:0 auto;
+    }
+    .title{
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+    }
+    .badge{
+      padding:6px 10px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      color:var(--muted);
+      font-size:12px;
+      background:rgba(255,255,255,.02);
+    }
+    h1{margin:0;font-size:26px;letter-spacing:.2px}
+    p.lead{margin:8px 0 0;color:var(--muted);max-width:900px;line-height:1.45}
+    main{
+      max-width:1200px;
+      margin:0 auto;
+      padding:14px 18px 40px;
+      display:grid;
+      grid-template-columns: 340px 1fr;
+      gap:16px;
+    }
+    @media (max-width: 980px){
+      main{grid-template-columns:1fr}
+    }
+
+    .panel{
+      background:rgba(255,255,255,.03);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .panel .hd{
+      padding:14px 14px 10px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+    }
+    .panel .bd{padding:14px}
+    .btn{
+      width:100%;
+      text-align:left;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.12);
+      color:var(--text);
+      border-radius:14px;
+      padding:12px 12px;
+      cursor:pointer;
+      transition:.15s;
+      margin-bottom:10px;
+    }
+    .btn:hover{transform:translateY(-1px);border-color:#2c3d72}
+    .btn.active{
+      border-color: rgba(122,162,255,.75);
+      background: rgba(122,162,255,.12);
+      box-shadow: 0 0 0 4px rgba(122,162,255,.08);
+    }
+    .btn small{display:block;color:var(--muted);margin-top:3px;line-height:1.25}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border:1px solid var(--border);
+      border-radius:999px;background:rgba(0,0,0,.12);
+      color:var(--muted);font-size:12px;
+    }
+    .pill .dot{width:8px;height:8px;border-radius:999px;background:var(--accent)}
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    @media (max-width: 980px){ .grid2{grid-template-columns:1fr} }
+    .card{
+      background:rgba(0,0,0,.15);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:12px;
+    }
+    .card h3{margin:0 0 8px;font-size:14px;color:#dbe6ff}
+    .card p{margin:0;color:var(--muted);line-height:1.45;font-size:13px}
+    .kpi{
+      display:flex;gap:10px;flex-wrap:wrap;margin-top:10px
+    }
+    .kpi .tile{
+      padding:10px 12px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:rgba(255,255,255,.02);
+      min-width: 145px;
+    }
+    .kpi .tile .label{font-size:12px;color:var(--muted)}
+    .kpi .tile .value{font-size:18px;margin-top:4px}
+    .code{
+      font-family:var(--mono);
+      font-size:12px;
+      color:#d8e3ff;
+      background:rgba(0,0,0,.25);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+      overflow:auto;
+      line-height:1.45;
+      white-space:pre;
+    }
+    .section-title{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      margin-top:14px;margin-bottom:10px
+    }
+    .section-title h2{margin:0;font-size:16px}
+    .muted{color:var(--muted)}
+    .chart{
+      height:360px;
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      overflow:hidden;
+      background:rgba(0,0,0,.10);
+    }
+    .chart.small{height:300px}
+    .note{
+      border-left:3px solid rgba(122,162,255,.65);
+      padding:10px 12px;
+      background:rgba(122,162,255,.06);
+      border-radius:12px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
+    .footer{
+      max-width:1200px;margin:0 auto;
+      padding:0 18px 30px;color:var(--muted);font-size:12px
+    }
+    a{color:var(--accent);text-decoration:none}
+  </style>
+</head>
+<body>
+<header>
+  <div class="title">
+    <div>
+      <h1>Healthcare Analytics Workflows (Pandas + Plotly) — Student Lesson</h1>
+      <p class="lead">
+        This page shows <b>6 business workflows</b> using your healthcare data model (patients, orders, results, invoices).
+        Each workflow explains: <b>business</b>, <b>value</b>, <b>need</b>, <b>technical terms</b>, <b>Pandas clean/transform</b>, and the <b>Plotly chart</b>.
+      </p>
+    </div>
+    <div class="badge">Designed from sample data • Replace with API calls in Python</div>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: workflow nav -->
+  <section class="panel">
+    <div class="hd">
+      <div class="pill"><span class="dot"></span> Workflows</div>
+      <span class="pill"><span class="dot" style="background:var(--accent2)"></span> Business → Data → Chart</span>
+    </div>
+    <div class="bd" id="workflowList"></div>
+  </section>
+
+  <!-- RIGHT: content -->
+  <section class="panel">
+    <div class="hd">
+      <div>
+        <div class="pill"><span class="dot"></span> Current Workflow</div>
+      </div>
+      <div class="pill"><span class="dot" style="background:var(--warn)"></span> Critical → SLA → Action</div>
+    </div>
+    <div class="bd">
+      <div class="note">
+        <b>Important:</b> The charts on this web page are rendered with <b>JavaScript transformations</b>.
+        In real projects you will do the same logic in <b>Python (Pandas)</b>, because you will fetch from API/SQL and clean without touching production tables.
+      </div>
+
+      <div class="section-title">
+        <h2 id="wfTitle">—</h2>
+        <div class="muted" id="wfBusiness">—</div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>Business Value (Why important)</h3>
+          <p id="wfValue">—</p>
+        </div>
+        <div class="card">
+          <h3>Need (Questions we answer)</h3>
+          <p id="wfNeed">—</p>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:12px">
+        <div class="card">
+          <h3>Technical Terms</h3>
+          <p id="wfTerms">—</p>
+        </div>
+        <div class="card">
+          <h3>Plotly Charts Used</h3>
+          <p id="wfCharts">—</p>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <h2>KPIs (Quick read)</h2>
+        <div class="muted">Auto-calculated from sample</div>
+      </div>
+      <div class="kpi" id="wfKpis"></div>
+
+      <div class="section-title">
+        <h2>Pandas Clean + Transform (What & Why)</h2>
+        <div class="muted">Python reference for interview</div>
+      </div>
+      <div class="code" id="wfPandas">—</div>
+
+      <div class="section-title">
+        <h2>Visualizations</h2>
+        <div class="muted">Interactive Plotly</div>
+      </div>
+
+      <div id="chartA" class="chart"></div>
+      <div style="height:12px"></div>
+      <div id="chartB" class="chart small"></div>
+      <div style="height:12px"></div>
+      <div id="chartC" class="chart small"></div>
+
+      <div class="section-title">
+        <h2>Interview “master” sentence</h2>
+      </div>
+      <div class="note" id="wfMaster">—</div>
+
+    </div>
+  </section>
+</main>
+
+<div class="footer">
+  Tip: host this file on any static hosting (Netlify / GitHub Pages). For real data, your Python script calls the API, cleans with Pandas, then exports CSV or JSON that this page can load.
+</div>
+
+<script>
+/* =========================================================
+   SAMPLE DATA (your new data)
+   ========================================================= */
+const SAMPLE_RESULTS = [
+  {
+    "result_id": 6722, "order_id": 1627, "test_type_id": 17, "performed_by": 1,
+    "performed_at": "2026-02-15T06:05:40.628859",
+    "value": "45.0", "flag": "normal",
+    "publish_status": "draft", "published_at": null,
+    "test_name": "Alkaline Phosphatase (ALP)", "unit": "U/L",
+    "normal_min": 44.0, "normal_max": 147.0, "critical_min": 30.0, "critical_max": 200.0,
+    "result_type": "numeric",
+    "performed_by_name": "Admin User",
+    "patient_user_id": 1197,
+    "ordered_at": "2026-02-15T06:05:39.528643",
+    "order_status": "published",
+    "doctor_name": "Admin User"
+  },
+  {
+    "result_id": 6724, "order_id": 1627, "test_type_id": 8, "performed_by": 1,
+    "performed_at": "2026-02-15T06:05:42.928914",
+    "value": "48.1", "flag": "normal",
+    "publish_status": "draft", "published_at": null,
+    "test_name": "Chloride (Cl)", "unit": "mmol/L",
+    "normal_min": 98.0, "normal_max": 107.0, "critical_min": 95.0, "critical_max": 110.0,
+    "result_type": "numeric",
+    "performed_by_name": "Admin User",
+    "patient_user_id": 1197,
+    "ordered_at": "2026-02-15T06:05:39.528643",
+    "order_status": "published",
+    "doctor_name": "Admin User"
+  },
+  {
+    "result_id": 6723, "order_id": 1627, "test_type_id": 32, "performed_by": 1,
+    "performed_at": "2026-02-15T06:05:41.728833",
+    "value": "14.8", "flag": "normal",
+    "publish_status": "draft", "published_at": null,
+    "test_name": "Iron", "unit": "µg/dL",
+    "normal_min": 65.0, "normal_max": 175.0, "critical_min": 40.0, "critical_max": 200.0,
+    "result_type": "numeric",
+    "performed_by_name": "Admin User",
+    "patient_user_id": 1197,
+    "ordered_at": "2026-02-15T06:05:39.528643",
+    "order_status": "published",
+    "doctor_name": "Admin User"
+  }
+];
+
+const SAMPLE_ORDERS = [
+  {"order_id": 1665, "patient_user_id": 1222, "ordered_by_doctor_id": 1, "ordered_at": "2026-02-15T06:11:17.527369", "priority": "urgent", "status": "in_progress", "notes": "Auto-generated order"},
+  {"order_id": 1664, "patient_user_id": 1221, "ordered_by_doctor_id": 1, "ordered_at": "2026-02-15T06:11:07.431385", "priority": "urgent", "status": "published", "notes": "Auto-generated order"},
+  {"order_id": 1663, "patient_user_id": 1220, "ordered_by_doctor_id": 1, "ordered_at": "2026-02-15T06:10:57.735274", "priority": "routine", "status": "published", "notes": "Auto-generated order"}
+];
+
+const SAMPLE_INVOICES = [
+  {"invoice_id": 3, "patient_user_id": 8, "total": 3970.0, "status": "unpaid", "created_at": "2026-02-13T00:17:46.628911", "paid_at": null},
+  {"invoice_id": 2, "patient_user_id": 7, "total": 245.0, "status": "unpaid", "created_at": "2026-02-10T00:17:46.558785", "paid_at": null},
+  {"invoice_id": 1, "patient_user_id": 6, "total": 145.0, "status": "paid", "created_at": "2026-02-07T00:17:46.555074", "paid_at": null}
+];
+
+/* =========================================================
+   CLEAN + TRANSFORM (JS version for page)
+   NOTE: Pandas version is shown per workflow in code block.
+   ========================================================= */
+function toDate(x){ return x ? new Date(x) : null; }
+function normLower(x){ return (x ?? "").toString().trim().toLowerCase(); }
+function normUpper(x){ return (x ?? "").toString().trim().toUpperCase(); }
+function toNum(x){ const n = Number(x); return Number.isFinite(n) ? n : null; }
+
+function cleanOrders(rows){
+  return rows.map(r => ({
+    ...r,
+    ordered_at_dt: toDate(r.ordered_at),
+    status_norm: normLower(r.status),
+    priority_norm: normLower(r.priority),
+  }));
+}
+
+function cleanResults(rows){
+  return rows.map(r => {
+    const valueNum = toNum(r.value);
+    const isNumeric = normLower(r.result_type) === "numeric" && valueNum !== null;
+
+    // critical if numeric outside critical bounds OR flag says critical
+    const critMin = toNum(r.critical_min);
+    const critMax = toNum(r.critical_max);
+    let isCritical = false;
+    if (isNumeric && critMin !== null && critMax !== null){
+      isCritical = (valueNum < critMin) || (valueNum > critMax);
+    }
+    if (normLower(r.flag) === "critical") isCritical = true;
+
+    const orderedAt = toDate(r.ordered_at);
+    const performedAt = toDate(r.performed_at);
+    const tatMin = (orderedAt && performedAt) ? ((performedAt - orderedAt) / 60000) : null;
+
+    return {
+      ...r,
+      flag_norm: normLower(r.flag),
+      publish_status_norm: normLower(r.publish_status),
+      test_name_norm: (r.test_name ?? "").toString().trim(),
+      performed_by_name_norm: (r.performed_by_name ?? "Unknown").toString().trim(),
+      doctor_name_norm: (r.doctor_name ?? "Unknown").toString().trim(),
+      ordered_at_dt: orderedAt,
+      performed_at_dt: performedAt,
+      value_num: valueNum,
+      is_critical: isCritical,
+      tat_order_to_perform_min: tatMin
+    };
+  });
+}
+
+function cleanInvoices(rows){
+  return rows.map(r => ({
+    ...r,
+    created_at_dt: toDate(r.created_at),
+    status_norm: normLower(r.status),
+    total_num: Number(r.total) || 0
+  }));
+}
+
+/* =========================================================
+   MINI UTILS (groupby counts/sums)
+   ========================================================= */
+function countBy(rows, key){
+  const m = new Map();
+  rows.forEach(r => {
+    const k = (typeof key === "function") ? key(r) : r[key];
+    m.set(k, (m.get(k) || 0) + 1);
+  });
+  return Array.from(m.entries()).map(([k,v]) => ({key:k, count:v}));
+}
+
+function sumBy(rows, key, valueKey){
+  const m = new Map();
+  rows.forEach(r => {
+    const k = (typeof key === "function") ? key(r) : r[key];
+    const v = Number(r[valueKey]) || 0;
+    m.set(k, (m.get(k) || 0) + v);
+  });
+  return Array.from(m.entries()).map(([k,v]) => ({key:k, sum:v}));
+}
+
+function dateKey(d){
+  if(!d) return null;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/* =========================================================
+   WORKFLOW DEFINITIONS (your exact requirements)
+   ========================================================= */
+const WORKFLOWS = [
+  {
+    id:"wf1",
+    title:"Workflow 1 — Operational Backlog & Throughput",
+    business:"Hospital Operations / Admin Dashboard",
+    value:"Detect whether orders are getting stuck (backlog), whether throughput is healthy, and whether urgent workload is being processed fast enough.",
+    need:"How many orders are in_progress? Is published rate low? Are urgent orders waiting in the backlog?",
+    terms:"Operational KPI, Backlog, Throughput, Status distribution, SLA monitoring",
+    charts:"Bar chart (status counts) • Stacked bar (priority by status) • Line chart (daily order trend)",
+    pandas:`# Pandas clean + transform (orders)
+df = pd.DataFrame(orders)
+
+# 1) Parse dates (string -> datetime) to do trends by day
+df["ordered_at"] = pd.to_datetime(df["ordered_at"], errors="coerce")
+
+# 2) Normalize text fields so groupby doesn't split 'Published' vs 'published'
+df["status"] = df["status"].str.strip().str.lower()
+df["priority"] = df["priority"].str.strip().str.lower()
+
+# 3) KPI tables
+status_counts = df["status"].value_counts().reset_index()
+status_counts.columns = ["status","count"]
+
+priority_by_status = df.groupby(["status","priority"]).size().reset_index(name="count")
+
+daily_trend = df.groupby(df["ordered_at"].dt.date).size().reset_index(name="count")
+daily_trend.columns = ["day","count"]`,
+    master:"I built an operations dashboard to monitor backlog and throughput, highlighting urgent-vs-routine workload to prevent SLA breaches.",
+    render(clean){
+      const orders = clean.orders;
+
+      // KPI: backlog count
+      const backlog = orders.filter(o => o.status_norm === "in_progress").length;
+      const published = orders.filter(o => o.status_norm === "published").length;
+
+      // Chart A: status counts
+      const statusCounts = countBy(orders, "status_norm").sort((a,b)=>b.count-a.count);
+      Plotly.newPlot("chartA", [{
+        type:"bar",
+        x: statusCounts.map(d=>d.key),
+        y: statusCounts.map(d=>d.count),
+        text: statusCounts.map(d=>d.count),
+        textposition:"auto"
+      }], { title:"Orders by Status (Backlog / Throughput)", paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      // Chart B: stacked priority by status
+      const pairs = {};
+      orders.forEach(o=>{
+        const s=o.status_norm, p=o.priority_norm;
+        const k = s+"__"+p;
+        pairs[k]=(pairs[k]||0)+1;
+      });
+      const statuses = [...new Set(orders.map(o=>o.status_norm))];
+      const prios = [...new Set(orders.map(o=>o.priority_norm))];
+
+      const traces = prios.map(p => ({
+        type:"bar",
+        name:p,
+        x: statuses,
+        y: statuses.map(s => pairs[s+"__"+p] || 0)
+      }));
+      Plotly.newPlot("chartB", traces, { barmode:"stack", title:"Priority Mix by Status (Urgent vs Routine)", paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      // Chart C: daily trend
+      const daily = countBy(orders, o => dateKey(o.ordered_at_dt)).filter(x=>x.key).sort((a,b)=>a.key.localeCompare(b.key));
+      Plotly.newPlot("chartC", [{
+        type:"scatter",
+        mode:"lines+markers",
+        x: daily.map(d=>d.key),
+        y: daily.map(d=>d.count)
+      }], { title:"Daily Order Trend (Throughput over time)", paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      return [
+        {label:"Orders total", value: String(orders.length)},
+        {label:"Backlog (in_progress)", value: String(backlog)},
+        {label:"Published", value: String(published)},
+      ];
+    }
+  },
+
+  {
+    id:"wf2",
+    title:"Workflow 2 — Lab Productivity (Nurse Performance)",
+    business:"Lab Management / Nurse Supervisor",
+    value:"Measure staff throughput and workload distribution to ensure the lab has enough capacity and performance is stable.",
+    need:"Results per nurse? Who is most active? Is daily result volume dropping?",
+    terms:"Workload distribution, Productivity metric, Output per staff, Volume analysis",
+    charts:"Bar chart (results per staff) • Line chart (daily results count)",
+    pandas:`# Pandas clean + transform (results)
+df = pd.DataFrame(results)
+
+df["performed_at"] = pd.to_datetime(df["performed_at"], errors="coerce")
+df["performed_by_name"] = df["performed_by_name"].fillna("Unknown").str.strip()
+
+# KPI: results per staff
+staff_counts = df["performed_by_name"].value_counts().reset_index()
+staff_counts.columns = ["performed_by_name","result_count"]
+
+# KPI: daily volume
+daily_results = df.groupby(df["performed_at"].dt.date).size().reset_index(name="count")
+daily_results.columns = ["day","count"]`,
+    master:"I tracked lab throughput by nurse to spot capacity issues early and validate that results are being entered consistently over time.",
+    render(clean){
+      const results = clean.results;
+
+      // Chart A: results per staff
+      const staffCounts = countBy(results, "performed_by_name_norm").sort((a,b)=>b.count-a.count);
+      Plotly.newPlot("chartA", [{
+        type:"bar",
+        x: staffCounts.map(d=>d.key),
+        y: staffCounts.map(d=>d.count),
+        text: staffCounts.map(d=>d.count),
+        textposition:"auto"
+      }], { title:"Results per Staff (Productivity)", paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      // Chart B: daily results trend
+      const daily = countBy(results, r => dateKey(r.performed_at_dt)).filter(x=>x.key).sort((a,b)=>a.key.localeCompare(b.key));
+      Plotly.newPlot("chartB", [{
+        type:"scatter", mode:"lines+markers",
+        x: daily.map(d=>d.key), y: daily.map(d=>d.count)
+      }], { title:"Daily Results Volume", paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      // Chart C: flag distribution (quality snapshot)
+      const flags = countBy(results, "flag_norm");
+      Plotly.newPlot("chartC", [{
+        type:"pie",
+        labels: flags.map(d=>d.key),
+        values: flags.map(d=>d.count)
+      }], { title:"Quality Snapshot: Result Flags", paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      const uniqueStaff = new Set(results.map(r=>r.performed_by_name_norm)).size;
+      return [
+        {label:"Results total", value: String(results.length)},
+        {label:"Unique staff", value: String(uniqueStaff)},
+        {label:"Top staff results", value: String(staffCounts[0]?.count ?? 0)},
+      ];
+    }
+  },
+
+  {
+    id:"wf3",
+    title:"Workflow 3 — Doctor Ordering Patterns (Clinical Operations)",
+    business:"Medical Director / Doctor Team Lead",
+    value:"Understand provider workload balance and ordering behavior; identify doctors who overuse urgent priority.",
+    need:"Is doctor workload balanced? Who creates most orders? Who uses urgent too frequently?",
+    terms:"Provider analytics, Workload balancing, Ordering behavior, Case mix",
+    charts:"Bar chart (orders per doctor) • Stacked bar (urgent vs routine by doctor)",
+    pandas:`# Pandas clean + transform (orders -> doctor patterns)
+df = pd.DataFrame(orders)
+df["ordered_at"] = pd.to_datetime(df["ordered_at"], errors="coerce")
+df["priority"] = df["priority"].str.strip().str.lower()
+
+doctor_counts = df["ordered_by_doctor_id"].value_counts().reset_index()
+doctor_counts.columns = ["doctor_id","order_count"]
+
+doctor_priority = df.groupby(["ordered_by_doctor_id","priority"]).size().reset_index(name="count")`,
+    master:"I built provider analytics to balance doctor workload and detect ordering patterns like overuse of urgent priority.",
+    render(clean){
+      const orders = clean.orders;
+
+      const counts = countBy(orders, "ordered_by_doctor_id").sort((a,b)=>b.count-a.count);
+      Plotly.newPlot("chartA", [{
+        type:"bar",
+        x: counts.map(d=>"Doctor "+d.key),
+        y: counts.map(d=>d.count),
+        text: counts.map(d=>d.count),
+        textposition:"auto"
+      }], { title:"Orders per Doctor", paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      // stacked urgent vs routine by doctor
+      const doctors = [...new Set(orders.map(o=>o.ordered_by_doctor_id))];
+      const prios = [...new Set(orders.map(o=>o.priority_norm))];
+
+      const map = {};
+      orders.forEach(o=>{
+        const k = o.ordered_by_doctor_id+"__"+o.priority_norm;
+        map[k]=(map[k]||0)+1;
+      });
+
+      const traces = prios.map(p=>({
+        type:"bar",
+        name:p,
+        x: doctors.map(d=>"Doctor "+d),
+        y: doctors.map(d=>map[d+"__"+p]||0)
+      }));
+      Plotly.newPlot("chartB", traces, { barmode:"stack", title:"Urgent vs Routine by Doctor", paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      // Chart C: status by doctor (simple)
+      const byDocStatus = {};
+      orders.forEach(o=>{
+        const k = o.ordered_by_doctor_id+"__"+o.status_norm;
+        byDocStatus[k]=(byDocStatus[k]||0)+1;
+      });
+      const statuses = [...new Set(orders.map(o=>o.status_norm))];
+      Plotly.newPlot("chartC", statuses.map(s=>({
+        type:"bar", name:s,
+        x: doctors.map(d=>"Doctor "+d),
+        y: doctors.map(d=>byDocStatus[d+"__"+s]||0)
+      })), { barmode:"group", title:"Status Distribution by Doctor", paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      return [
+        {label:"Doctors in sample", value: String(new Set(orders.map(o=>o.ordered_by_doctor_id)).size)},
+        {label:"Orders total", value: String(orders.length)},
+        {label:"Top doctor orders", value: String(counts[0]?.count ?? 0)},
+      ];
+    }
+  },
+
+  {
+    id:"wf4",
+    title:"Workflow 4 — Clinical Risk Monitoring (Abnormal/Critical Rate)",
+    business:"Clinical Quality / Patient Safety",
+    value:"Rising abnormal/critical rates are a risk signal; identify which tests drive risk and monitor alert volumes.",
+    need:"Which tests show the most abnormal/critical results? Is critical rate rising? Where is risk concentrated?",
+    terms:"Clinical KPI, Abnormal rate, Critical alerts, Test-level risk distribution",
+    charts:"Pie (flag mix) • Bar (abnormal/critical by test) • Heatmap (test x flag) [optional]",
+    pandas:`# Pandas clean + transform (risk monitoring)
+df = pd.DataFrame(results)
+
+df["flag"] = df["flag"].str.strip().str.lower()
+df["test_name"] = df["test_name"].str.strip()
+
+flag_mix = df["flag"].value_counts().reset_index()
+flag_mix.columns = ["flag","count"]
+
+# abnormal+critical counts by test
+risk = df[df["flag"].isin(["abnormal","critical"])].groupby("test_name").size().reset_index(name="risk_count")
+risk = risk.sort_values("risk_count", ascending=False)
+
+# optional heatmap table
+heat = df.groupby(["test_name","flag"]).size().reset_index(name="count")`,
+    master:"I monitored clinical quality by tracking abnormal/critical rates and pinpointing which tests contribute most to risk alerts.",
+    render(clean){
+      const results = clean.results;
+
+      // Chart A: flag mix (pie)
+      const flags = countBy(results, "flag_norm");
+      Plotly.newPlot("chartA", [{
+        type:"pie",
+        labels: flags.map(d=>d.key),
+        values: flags.map(d=>d.count)
+      }], { title:"Flag Mix: Normal vs Abnormal vs Critical", paper_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      // Chart B: risk by test (abnormal/critical only)
+      const riskOnly = results.filter(r => ["abnormal","critical"].includes(r.flag_norm) || r.is_critical);
+      const riskByTest = countBy(riskOnly, "test_name_norm").sort((a,b)=>b.count-a.count);
+      Plotly.newPlot("chartB", [{
+        type:"bar",
+        x: riskByTest.map(d=>d.key),
+        y: riskByTest.map(d=>d.count),
+        text: riskByTest.map(d=>d.count),
+        textposition:"auto"
+      }], { title:"Risk Alerts by Test (abnormal/critical)", paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      // Chart C: critical vs non-critical derived (pie)
+      const crit = results.filter(r=>r.is_critical).length;
+      const non = results.length - crit;
+      Plotly.newPlot("chartC", [{
+        type:"pie",
+        labels:["critical","not_critical"],
+        values:[crit, non]
+      }], { title:"Derived Critical Board (from thresholds)", paper_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      return [
+        {label:"Results total", value: String(results.length)},
+        {label:"Critical (derived)", value: String(crit)},
+        {label:"Risk alerts", value: String(riskOnly.length)},
+      ];
+    }
+  },
+
+  {
+    id:"wf5",
+    title:"Workflow 5 — Turnaround Time (TAT) + Bottleneck Analysis (SLA)",
+    business:"Operations + Quality (SLA monitoring)",
+    value:"Strong story: track cycle time from order → performed → published; find bottlenecks and SLA breaches, especially for urgent cases.",
+    need:"How many minutes to perform/publish? Are urgent orders faster? Which staff/doctor causes delays?",
+    terms:"Turnaround Time (TAT), Cycle time, Bottleneck, SLA breach, Latency distribution",
+    charts:"Histogram (TAT minutes) • Box plot (urgent vs routine TAT) • Scatter (volume vs TAT) [optional]",
+    pandas:`# Pandas clean + transform (TAT)
+orders_df = pd.DataFrame(orders)
+results_df = pd.DataFrame(results)
+
+orders_df["ordered_at"] = pd.to_datetime(orders_df["ordered_at"], errors="coerce")
+results_df["performed_at"] = pd.to_datetime(results_df["performed_at"], errors="coerce")
+results_df["ordered_at"] = pd.to_datetime(results_df["ordered_at"], errors="coerce")
+
+# 1) compute TAT for each result row (order->perform)
+results_df["tat_min"] = (results_df["performed_at"] - results_df["ordered_at"]).dt.total_seconds()/60
+
+# 2) join priority from orders for urgent vs routine comparison
+joined = results_df.merge(orders_df[["order_id","priority"]], on="order_id", how="left")
+joined["priority"] = joined["priority"].str.strip().str.lower()
+
+# 3) KPIs
+p95 = joined["tat_min"].quantile(0.95)
+urgent_avg = joined[joined["priority"]=="urgent"]["tat_min"].mean()
+routine_avg = joined[joined["priority"]=="routine"]["tat_min"].mean()`,
+    master:"I computed turnaround time from order-to-perform and used distribution charts to detect bottlenecks and SLA risk, especially for urgent cases.",
+    render(clean){
+      const results = clean.results;
+      const orders = clean.orders;
+
+      // Join priority into results (by order_id)
+      const prioByOrder = new Map(orders.map(o=>[o.order_id, o.priority_norm]));
+      const joined = results.map(r => ({...r, priority: prioByOrder.get(r.order_id) || "unknown"}))
+                            .filter(r => r.tat_order_to_perform_min !== null);
+
+      // Chart A: TAT histogram
+      Plotly.newPlot("chartA", [{
+        type:"histogram",
+        x: joined.map(r=>r.tat_order_to_perform_min),
+        nbinsx: 10
+      }], { title:"TAT Distribution: Order → Performed (minutes)", paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      // Chart B: box plot urgent vs routine (if we have priority)
+      const urgent = joined.filter(r=>r.priority==="urgent").map(r=>r.tat_order_to_perform_min);
+      const routine = joined.filter(r=>r.priority==="routine").map(r=>r.tat_order_to_perform_min);
+
+      Plotly.newPlot("chartB", [
+        {type:"box", name:"urgent", y: urgent},
+        {type:"box", name:"routine", y: routine},
+        {type:"box", name:"unknown", y: joined.filter(r=>!["urgent","routine"].includes(r.priority)).map(r=>r.tat_order_to_perform_min)}
+      ], { title:"Urgent vs Routine TAT (Box Plot)", paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      // Chart C: scatter (TAT vs value) just as demo
+      Plotly.newPlot("chartC", [{
+        type:"scatter", mode:"markers",
+        x: joined.map(r=>r.value_num),
+        y: joined.map(r=>r.tat_order_to_perform_min),
+        text: joined.map(r=>r.test_name_norm)
+      }], { title:"(Example) TAT vs Test Value (Scatter)", xaxis:{title:"value (numeric)"}, yaxis:{title:"TAT (min)"}, paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      const avg = (arr)=>arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
+      return [
+        {label:"Joined rows", value: String(joined.length)},
+        {label:"Avg TAT (min)", value: avg(joined.map(r=>r.tat_order_to_perform_min)).toFixed(2)},
+        {label:"Urgent avg TAT", value: avg(urgent).toFixed(2)}
+      ];
+    }
+  },
+
+  {
+    id:"wf6",
+    title:"Workflow 6 — Revenue & Billing Health (Finance)",
+    business:"Finance / Billing Department",
+    value:"Track cashflow risk: unpaid invoices, daily revenue trend, and high-value invoices that need follow-up.",
+    need:"Paid vs unpaid ratio? Total revenue trend? Who has the highest invoices?",
+    terms:"Revenue analytics, Cashflow monitoring, AR (Accounts Receivable), Payment status breakdown",
+    charts:"Pie (paid vs unpaid) • Line (daily revenue) • Bar (top invoices by total)",
+    pandas:`# Pandas clean + transform (billing)
+df = pd.DataFrame(invoices)
+
+df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce")
+df["status"] = df["status"].str.strip().str.lower()
+df["total"] = pd.to_numeric(df["total"], errors="coerce").fillna(0)
+
+paid_unpaid = df["status"].value_counts().reset_index()
+paid_unpaid.columns = ["status","count"]
+
+daily_revenue = df.groupby(df["created_at"].dt.date)["total"].sum().reset_index()
+daily_revenue.columns = ["day","total_revenue"]
+
+top_invoices = df.sort_values("total", ascending=False).head(10)`,
+    master:"I created a finance dashboard to monitor AR risk by tracking paid vs unpaid invoices and daily revenue trends.",
+    render(clean){
+      const inv = clean.invoices;
+
+      // Chart A: paid vs unpaid
+      const status = countBy(inv, "status_norm");
+      Plotly.newPlot("chartA", [{
+        type:"pie",
+        labels: status.map(d=>d.key),
+        values: status.map(d=>d.count)
+      }], { title:"Billing: Paid vs Unpaid", paper_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      // Chart B: daily revenue sum
+      const daily = sumBy(inv, r => dateKey(r.created_at_dt), "total_num").filter(x=>x.key).sort((a,b)=>a.key.localeCompare(b.key));
+      Plotly.newPlot("chartB", [{
+        type:"scatter", mode:"lines+markers",
+        x: daily.map(d=>d.key),
+        y: daily.map(d=>d.sum)
+      }], { title:"Daily Revenue Trend (Sum of totals)", paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      // Chart C: top invoices
+      const top = [...inv].sort((a,b)=>b.total_num-a.total_num).slice(0,10);
+      Plotly.newPlot("chartC", [{
+        type:"bar",
+        x: top.map(r=>"Invoice "+r.invoice_id),
+        y: top.map(r=>r.total_num),
+        text: top.map(r=>r.total_num),
+        textposition:"auto"
+      }], { title:"Top Invoices (High-value follow-up)", paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)" }, {displayModeBar:false});
+
+      const unpaidTotal = inv.filter(i=>i.status_norm==="unpaid").reduce((a,b)=>a+b.total_num,0);
+      const total = inv.reduce((a,b)=>a+b.total_num,0);
+      return [
+        {label:"Invoices total", value: String(inv.length)},
+        {label:"Revenue total", value: total.toFixed(2)},
+        {label:"Unpaid total", value: unpaidTotal.toFixed(2)}
+      ];
+    }
+  }
+];
+
+/* =========================================================
+   UI + RENDER
+   ========================================================= */
+const CLEAN = {
+  orders: cleanOrders(SAMPLE_ORDERS),
+  results: cleanResults(SAMPLE_RESULTS),
+  invoices: cleanInvoices(SAMPLE_INVOICES),
+};
+
+function setKpis(kpis){
+  const el = document.getElementById("wfKpis");
+  el.innerHTML = "";
+  kpis.forEach(k => {
+    const div = document.createElement("div");
+    div.className = "tile";
+    div.innerHTML = `<div class="label">${escapeHtml(k.label)}</div><div class="value">${escapeHtml(k.value)}</div>`;
+    el.appendChild(div);
+  });
+}
+
+function escapeHtml(s){
+  return (s ?? "").toString()
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;");
+}
+
+function loadWorkflow(id){
+  const wf = WORKFLOWS.find(w=>w.id===id) || WORKFLOWS[0];
+
+  // text blocks
+  document.getElementById("wfTitle").textContent = wf.title;
+  document.getElementById("wfBusiness").textContent = wf.business;
+  document.getElementById("wfValue").textContent = wf.value;
+  document.getElementById("wfNeed").textContent = wf.need;
+  document.getElementById("wfTerms").textContent = wf.terms;
+  document.getElementById("wfCharts").textContent = wf.charts;
+  document.getElementById("wfPandas").textContent = wf.pandas;
+  document.getElementById("wfMaster").textContent = wf.master;
+
+  // render charts + KPIs
+  const kpis = wf.render(CLEAN);
+  setKpis(kpis);
+
+  // activate button
+  document.querySelectorAll(".btn").forEach(b => b.classList.toggle("active", b.dataset.id === wf.id));
+}
+
+function buildNav(){
+  const list = document.getElementById("workflowList");
+  list.innerHTML = "";
+  WORKFLOWS.forEach(wf=>{
+    const b = document.createElement("button");
+    b.className = "btn";
+    b.dataset.id = wf.id;
+    b.innerHTML = `<b>${escapeHtml(wf.title)}</b><small>${escapeHtml(wf.business)}</small>`;
+    b.onclick = ()=>loadWorkflow(wf.id);
+    list.appendChild(b);
+  });
+}
+
+// init
+buildNav();
+loadWorkflow("wf1");
+</script>
+</body>
+</html>

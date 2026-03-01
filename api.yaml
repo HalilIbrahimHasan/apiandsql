@@ -1,0 +1,232 @@
+openapi: 3.0.3
+info:
+  title: Labcorp Dev Org - Apex REST CRM
+  version: "1.0.0"
+servers:
+  - url: https://labcorp-f-dev-ed.my.salesforce.com/services/apexrest
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Account:
+      type: object
+      properties:
+        Id: { type: string }
+        Name: { type: string }
+        Phone: { type: string }
+        Website: { type: string }
+        Industry: { type: string }
+      required: [Name]
+    Contact:
+      type: object
+      properties:
+        Id: { type: string }
+        FirstName: { type: string }
+        LastName: { type: string }
+        Phone: { type: string }
+        Email: { type: string }
+        AccountId: { type: string }
+      required: [LastName]
+    Lead:
+      type: object
+      properties:
+        Id: { type: string }
+        FirstName: { type: string }
+        LastName: { type: string }
+        Company: { type: string }
+        Email: { type: string }
+        Phone: { type: string }
+        Status: { type: string }
+      required: [LastName, Company]
+paths:
+  /contactService:
+    post:
+      summary: Create Contact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Contact" }
+            example:
+              FirstName: "Ana"
+              LastName: "Kaya"
+              Phone: "555-111-2222"
+              Email: "ana@test.com"
+      responses:
+        "200":
+          description: Contact
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Contact" }
+
+  /contactService/{contactId}:
+    parameters:
+      - in: path
+        name: contactId
+        required: true
+        schema: { type: string }
+    get:
+      summary: Get Contact
+      responses:
+        "200":
+          description: Contact
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Contact" }
+    put:
+      summary: Update Contact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Contact" }
+            example:
+              Phone: "555-999-0000"
+              Email: "new@test.com"
+      responses:
+        "200":
+          description: Contact
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Contact" }
+    delete:
+      summary: Delete Contact
+      responses:
+        "200":
+          description: Delete result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  deletedId: { type: string }
+
+  /accountService:
+    post:
+      summary: Create Account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Account" }
+            example:
+              Name: "Acme Hospital"
+              Phone: "555-222-3333"
+              Industry: "Healthcare"
+      responses:
+        "200":
+          description: Account
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Account" }
+
+  /accountService/{accountId}:
+    parameters:
+      - in: path
+        name: accountId
+        required: true
+        schema: { type: string }
+    get:
+      summary: Get Account
+      responses:
+        "200":
+          description: Account
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Account" }
+    put:
+      summary: Update Account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Account" }
+            example:
+              Phone: "555-000-1111"
+      responses:
+        "200":
+          description: Account
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Account" }
+    delete:
+      summary: Delete Account
+      responses:
+        "200":
+          description: Delete result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  deletedId: { type: string }
+
+  /leadService:
+    post:
+      summary: Create Lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Lead" }
+            example:
+              FirstName: "Mehmet"
+              LastName: "Yilmaz"
+              Company: "Acme"
+              Email: "m@acme.com"
+              Status: "Open - Not Contacted"
+      responses:
+        "200":
+          description: Lead
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lead" }
+
+  /leadService/{leadId}:
+    parameters:
+      - in: path
+        name: leadId
+        required: true
+        schema: { type: string }
+    get:
+      summary: Get Lead
+      responses:
+        "200":
+          description: Lead
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lead" }
+    put:
+      summary: Update Lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Lead" }
+            example:
+              Status: "Working - Contacted"
+      responses:
+        "200":
+          description: Lead
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lead" }
+    delete:
+      summary: Delete Lead
+      responses:
+        "200":
+          description: Delete result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  deletedId: { type: string }
