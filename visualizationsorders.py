@@ -6,7 +6,7 @@ import requests
 # 1) DATA (API'den gelmiş gibi)
 # -----------------------------
 def get_token():
-    url = "https://talentifylabhealth-2edp.onrender.com/api/auth/login"
+    url = "https://talentifylabhealth.onrender.com/api/auth/login"
 
     credentials = {
         "username": "admin1",
@@ -19,17 +19,32 @@ def get_token():
     return resp.json()["token"]
 
 
+
+
+
+
+
+
+
 def get_orders_data():
     token = {
             "Authorization": f"Bearer {get_token()}"
         }
+    url = "https://talentifylabhealth.onrender.com/api/orders"
 
-
-    response = requests.get('https://talentifylabhealth-2edp.onrender.com/api/orders', headers=token)
-
-    print(response.status_code)
+    response = requests.get(url, headers=token)
 
     return response.json()
+
+
+
+
+
+
+
+
+
+
 
 
 def prepare_orders_df(data):
@@ -43,6 +58,10 @@ def prepare_orders_df(data):
     df["priority"] = df["priority"].astype(str).str.strip().str.lower()
 
     return df
+
+
+
+
 
 
 # -----------------------------
@@ -94,23 +113,24 @@ def flow_4_priority_mix(orders_df):
 
 
 
+
+
+   
+
 # =========================================================
 # MAIN (run everything)
 # =========================================================
-def main():
 
-    # request / Get / Read orders data API
+if __name__ == "__main__":
+
+     # request / Get / Read orders data API
     orders_data = get_orders_data() 
 
 
-    # Prepare and call ready data Pandas : cleanup / transform data adding / removing
+    # Prepare and call ready data Pandas : cleanup / transform data adding / removing / ignore / parse
     orders_df = prepare_orders_df(orders_data)
 
 
     # Operational boards
     flow_3_orders_backlog(orders_df)
     flow_4_priority_mix(orders_df)
-
-
-if __name__ == "__main__":
-    main()

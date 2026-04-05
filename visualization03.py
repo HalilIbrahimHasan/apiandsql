@@ -324,7 +324,10 @@ def flow_6_billing_cashflow(invoices_df):
 # =========================================================
 # MAIN (run everything)
 # =========================================================
-def main():
+
+    
+
+if __name__ == "__main__":
     results_data = get_results_data()
     orders_data = get_orders_data()
     invoices_data = get_invoices_data()
@@ -347,6 +350,3 @@ def main():
     flow_5_lab_productivity(results_df)
     flow_6_billing_cashflow(invoices_df)
 
-
-if __name__ == "__main__":
-    main()

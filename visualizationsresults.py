@@ -6,7 +6,7 @@ import requests
 # 1) DATA (API'den gelmiş gibi)
 # -----------------------------
 def get_token():
-    url = "https://talentifylabhealth-2edp.onrender.com/api/auth/login"
+    url = "https://talentifylabhealth.onrender.com/api/auth/login"
 
     credentials = {
         "username": "admin1",
@@ -30,7 +30,7 @@ def get_results_data():
         }
 
 
-    response = requests.get('https://talentifylabhealth-2edp.onrender.com/api/results', headers=token)
+    response = requests.get('https://talentifylabhealth.onrender.com/api/results', headers=token)
 
     print(response.status_code)
 
@@ -168,17 +168,24 @@ def flow_5_lab_productivity(results_df):
     fig.show()
 
 
+    
+
+
+   # =========================================================
+    # MAIN (run everything)
     # =========================================================
-# MAIN (run everything)
-# =========================================================
-def main():
-    results_data = get_results_data()
-    results_df = prepare_results_df(results_data)
-     # Linked workflows (A -> B)
-    critical_df = flow_1_critical_results_board(results_df)
-    flow_2_sla_check_for_critical(critical_df)
-    # Capacity & finance boards
-    flow_5_lab_productivity(results_df)
 
 if __name__ == "__main__":
-    main()
+     # request / Get / Read orders data API
+    results_data = get_results_data()
+
+     # Prepare and call ready data Pandas : cleanup / transform data adding / removing
+    results_df = prepare_results_df(results_data)
+
+
+     # Linked workflows (A -> B) Find critical cases / results display board & Check sla respected
+    critical_df = flow_1_critical_results_board(results_df)
+    flow_2_sla_check_for_critical(critical_df)
+    
+    # Capacity & finance boards
+    flow_5_lab_productivity(results_df)

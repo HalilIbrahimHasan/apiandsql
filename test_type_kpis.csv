@@ -1,0 +1,46 @@
+test_name,result_count,published_rate_pct,avg_numeric_value,critical_rate_pct
+BUN,81,100.0,13.02,0.0
+RSV Rapid,78,100.0,,0.0
+ALT (SGPT),77,100.0,24.91,0.0
+Strep A Rapid,77,100.0,,0.0
+Total Cholesterol,77,100.0,86.52,0.0
+RBC,77,100.0,5.05,0.0
+BNP,77,100.0,66.2,0.0
+HDL,76,100.0,50.89,0.0
+LDL,75,100.0,44.85,0.0
+COVID/Flu Rapid,74,100.0,,0.0
+Blood (Urine),73,100.0,,0.0
+Alkaline Phosphatase (ALP),73,100.0,92.22,0.0
+Hemoglobin (Hgb),71,100.0,13.86,0.0
+Albumin,71,100.0,4.19,0.0
+Sodium (Na),70,100.0,140.11,0.0
+Iron,70,100.0,119.64,0.0
+HbA1c,70,100.0,2.9,0.0
+Urine Specific Gravity,70,100.0,1.02,14.29
+Chloride (Cl),69,100.0,103.15,0.0
+Glucose (fasting),68,100.0,85.89,0.0
+Total Bilirubin,68,100.0,0.8,0.0
+Ketones (Urine),67,100.0,,0.0
+Protein (Urine),67,100.0,7.28,0.0
+TSH,67,100.0,2.1,0.0
+Hematocrit (Hct),66,100.0,41.83,0.0
+C-Reactive Protein (CRP),66,100.0,1.66,0.0
+Creatinine,65,100.0,0.97,0.0
+Leukocytes (Urine),64,100.0,,0.0
+MCV,64,100.0,88.98,0.0
+AST (SGOT),64,100.0,22.66,0.0
+Potassium (K),63,100.0,4.3,0.0
+Vitamin B12,62,100.0,549.85,0.0
+MCH / MCHC,62,100.0,30.28,0.0
+Calcium,61,100.0,9.42,0.0
+Triglycerides,60,100.0,91.22,0.0
+Mono (EBV) Rapid,59,100.0,,0.0
+Platelet Count,58,100.0,290.42,0.0
+Troponin,58,100.0,0.03,0.0
+CO₂ / Bicarbonate,57,100.0,24.33,0.0
+Urine Culture,56,100.0,,0.0
+Urine pH,56,100.0,6.72,0.0
+Vitamin D,56,100.0,64.88,0.0
+WBC,53,100.0,8.69,1.89
+eGFR,49,100.0,77.06,0.0
+Ferritin,44,100.0,108.8,0.0
