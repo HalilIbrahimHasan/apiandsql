@@ -3,189 +3,252 @@ import plotly.express as px
 import requests
 
 # -----------------------------
-# 1) DATA (API'den gelmiş gibi)
+# CONFIG
+# -----------------------------
+BASE_URL = "https://talentifylabhealth.onrender.com"
+USERNAME = "admin1"
+PASSWORD = "Admin123"
+
+
+# -----------------------------
+# AUTH
 # -----------------------------
 def get_token():
-    url = "https://talentifylabhealth.onrender.com/api/auth/login"
+    url = f"{BASE_URL}/api/auth/login"
 
     credentials = {
-        "username": "admin1",
-        "password": "Admin123"
+        "username": USERNAME,
+        "password": PASSWORD
     }
 
-    resp = requests.post(url, json=credentials)
+    resp = requests.post(url, json=credentials, timeout=30)
     resp.raise_for_status()
 
     return resp.json()["token"]
 
 
-# =========================================================
-# 1) DATA (as if it came from API)
-#    Later you will replace these functions with API calls.
-# =========================================================
+# -----------------------------
+# EXTRACT
+# -----------------------------
 def get_results_data():
+    headers = {
+        "Authorization": f"Bearer {get_token()}"
+    }
 
-    token = {
-            "Authorization": f"Bearer {get_token()}"
-        }
+    url = f"{BASE_URL}/api/results"
 
-
-    response = requests.get('https://talentifylabhealth.onrender.com/api/results', headers=token)
-
-    print(response.status_code)
+    response = requests.get(url, headers=headers, timeout=30)
+    print("Results status:", response.status_code)
+    response.raise_for_status()
 
     return response.json()
 
 
-
-    # =========================================================
-# 2) Convert to DataFrame + CLEANUP (with WHY)
-# =========================================================
+# -----------------------------
+# TRANSFORM
+# -----------------------------
 def prepare_results_df(data):
     df = pd.DataFrame(data)
 
-    # WHY: API returns dates as strings; datetime is needed to compute durations (SLA/TAT).
+    print("Columns:", df.columns.tolist())
+    print(df.head(3))
+
+    df.columns = df.columns.str.strip().str.lower()
+
+    needed_cols = [
+        "result_id",
+        "order_id",
+        "performed_at",
+        "value",
+        "flag",
+        "publish_status",
+        "published_at",
+        "test_name",
+        "unit",
+        "normal_min",
+        "normal_max",
+        "critical_min",
+        "critical_max",
+        "result_type",
+        "performed_by_name",
+        "reviewed_by_name",
+        "patient_user_id",
+        "ordered_at",
+        "order_status",
+        "doctor_name"
+    ]
+    for col in needed_cols:
+        if col not in df.columns:
+            df[col] = None
+
+    # datetime
     df["ordered_at"] = pd.to_datetime(df["ordered_at"], errors="coerce")
     df["performed_at"] = pd.to_datetime(df["performed_at"], errors="coerce")
     df["published_at"] = pd.to_datetime(df["published_at"], errors="coerce")
 
-    # WHY: "value" arrives as string; numeric allows thresholds & analytics (min/max, distribution).
-    df["value_num"] = pd.to_numeric(df["value"], errors="coerce")
-
-    # WHY: normalize text fields to avoid "Normal" vs "normal" bugs in groupby.
-    df["flag"] = df["flag"].astype(str).str.strip().str.lower()
+    # normalize text
+    df["order_status"] = df["order_status"].astype(str).str.strip().str.lower()
     df["publish_status"] = df["publish_status"].astype(str).str.strip().str.lower()
-    df["test_name"] = df["test_name"].astype(str).str.strip()
+    df["flag"] = df["flag"].astype(str).str.strip().str.lower()
+    df["result_type"] = df["result_type"].astype(str).str.strip().str.lower()
 
-    # WHY: missing names break charts; fill with "Unknown".
-    df["performed_by_name"] = df.get("performed_by_name", pd.Series([])).fillna("Unknown").astype(str).str.strip()
-    df["doctor_name"] = df.get("doctor_name", pd.Series([])).fillna("Unknown").astype(str).str.strip()
+    df["performed_by_name"] = df["performed_by_name"].fillna("Unknown").astype(str).str.strip()
+    df["doctor_name"] = df["doctor_name"].fillna("Unknown").astype(str).str.strip()
 
-    # WHY: define a computed "is_critical" using clinical thresholds when available.
-    # rule: critical if numeric and outside [critical_min, critical_max] OR flag == "critical"
+    # numeric
+    df["value_num"] = pd.to_numeric(df["value"], errors="coerce")
+    df["critical_min_num"] = pd.to_numeric(df["critical_min"], errors="coerce")
+    df["critical_max_num"] = pd.to_numeric(df["critical_max"], errors="coerce")
+
+    # critical logic
     df["is_critical"] = False
-    numeric_mask = df["result_type"].astype(str).str.lower().eq("numeric") & df["value_num"].notna()
+
+    numeric_mask = df["value_num"].notna()
+
     df.loc[numeric_mask, "is_critical"] = (
-        (df.loc[numeric_mask, "value_num"] < pd.to_numeric(df.loc[numeric_mask, "critical_min"], errors="coerce")) |
-        (df.loc[numeric_mask, "value_num"] > pd.to_numeric(df.loc[numeric_mask, "critical_max"], errors="coerce"))
+        (df.loc[numeric_mask, "value_num"] < df.loc[numeric_mask, "critical_min_num"]) |
+        (df.loc[numeric_mask, "value_num"] > df.loc[numeric_mask, "critical_max_num"])
     )
+
     df["is_critical"] = df["is_critical"] | df["flag"].eq("critical")
 
-    # WHY: SLA metric: minutes from order to performed (lab turnaround).
-    df["tat_order_to_perform_min"] = (df["performed_at"] - df["ordered_at"]).dt.total_seconds() / 60
+    # keep only published rows first
+    df = df[df["publish_status"] == "published"].copy()
+
+    # latest result per order
+    df = df.sort_values("published_at", ascending=False)
+    df = df.drop_duplicates(subset=["order_id"], keep="first")
+
+    print("Final dataset size (order-level):", len(df))
 
     return df
 
 
+# -----------------------------
+# VALIDATE
+# -----------------------------
+def validate_results_df(df):
+    if df.empty:
+        raise Exception("Results dataframe is empty after filtering")
 
-    # =========================================================
-# 3) WORKFLOWS (linked like a real business board)
-#    Flow A finds critical results; Flow B checks if processed on time.
-# =========================================================
 
 # -----------------------------
-# FLOW 1: Critical Results Board (Clinical Risk Board)
+# FLOW 1: Critical vs Not
 # -----------------------------
-def flow_1_critical_results_board(results_df):
-    """
-    DESCRIPTION (Business):
-    We check test results to see if any CRITICAL values exist on the board.
-    If critical values exist, the next workflow will verify whether these orders were processed on time (SLA / TAT).
-    """
-    print("\nFLOW 1:", flow_1_critical_results_board.__doc__.strip())
+def flow_1_critical_results(df):
+    print("\nFLOW 1: Critical vs Not")
 
-    critical_counts = (
-        results_df.assign(critical_label=lambda d: d["is_critical"].map({True: "critical", False: "not_critical"}))
-        ["critical_label"]
-        .value_counts()
-        .reset_index()
-    )
-    critical_counts.columns = ["critical_label", "count"]
+    counts = df["is_critical"].map({
+        True: "critical",
+        False: "not_critical"
+    }).value_counts().reset_index()
+
+    counts.columns = ["critical_label", "count"]
 
     fig = px.pie(
-    critical_counts,
-    names="critical_label",
-    values="count",
-    title="Clinical Risk Board: Critical vs Not Critical Results",
-    color="critical_label",
-    color_discrete_map={
-        "Critical": "red",
-        "Not Critical": "blue"
-    }
+        counts,
+        names="critical_label",
+        values="count",
+        title="Clinical Risk (Order Level)"
     )
     fig.show()
 
-    return results_df[results_df["is_critical"] == True].copy()
 
-
-
-    # -----------------------------
-# FLOW 2: SLA / Turnaround Check for Critical Results
 # -----------------------------
-def flow_2_sla_check_for_critical(critical_results_df):
-    """
-    DESCRIPTION (Business):
-    If a result is critical, we must ensure it was processed quickly (Turnaround Time / SLA).
-    This chart shows the distribution of minutes from ORDERED -> PERFORMED for critical results.
-    """
-    print("\nFLOW 2:", flow_2_sla_check_for_critical.__doc__.strip())
+# FLOW 2: SLA
+# -----------------------------
+def flow_2_sla(df):
+    print("\nFLOW 2: SLA (Turnaround Time)")
 
-    # If there are no critical rows in the sample, still show empty-safe behavior.
-    if critical_results_df.empty:
-        print("No critical rows found in this sample. (On real data, this chart will populate.)")
-        return
+    df = df.copy()
+    df["tat_min"] = (
+        (df["performed_at"] - df["ordered_at"]).dt.total_seconds() / 60
+    )
 
     fig = px.histogram(
-        critical_results_df,
-        x="tat_order_to_perform_min",
-        nbins=10,
-        title="SLA Check: Critical Results Turnaround Time (minutes)"
+        df,
+        x="tat_min",
+        nbins=20,
+        title="Turnaround Time Distribution (minutes)"
     )
     fig.show()
 
 
-    # -----------------------------
-# FLOW 5: Lab Productivity (Results entered per staff)
 # -----------------------------
-def flow_5_lab_productivity(results_df):
-    """
-    DESCRIPTION (Business):
-    Lab managers check staff throughput to ensure enough capacity (nurse/lab workload).
-    This chart shows how many results each staff member entered.
-    """
-    print("\nFLOW 5:", flow_5_lab_productivity.__doc__.strip())
+# FLOW 3: Staff Productivity
+# -----------------------------
+def flow_3_staff(df):
+    print("\nFLOW 3: Staff Productivity")
 
-    staff_counts = results_df["performed_by_name"].value_counts().reset_index()
-    staff_counts.columns = ["performed_by_name", "result_count"]
+    staff_counts = df.groupby("performed_by_name")["order_id"].nunique().reset_index()
+    staff_counts.columns = ["performed_by_name", "order_count"]
 
     fig = px.bar(
         staff_counts,
         x="performed_by_name",
-        y="result_count",
-        text="result_count",
-        title="Lab Board: Results Entered per Staff (Productivity)"
+        y="order_count",
+        text="order_count",
+        title="Orders Processed per Staff"
     )
     fig.show()
 
 
-    
+# -----------------------------
+# FLOW 4: Publish Status
+# -----------------------------
+def flow_4_publish(df):
+    print("\nFLOW 4: Publish Status")
+
+    counts = df["publish_status"].value_counts().reset_index()
+    counts.columns = ["publish_status", "count"]
+
+    fig = px.pie(
+        counts,
+        names="publish_status",
+        values="count",
+        title="Publish Status (Order Level)"
+    )
+    fig.show()
 
 
-   # =========================================================
-    # MAIN (run everything)
-    # =========================================================
+# -----------------------------
+# BONUS FLOW 5: Order Status
+# -----------------------------
+def flow_5_order_status(df):
+    print("\nFLOW 5: Order Status")
+
+    counts = df["order_status"].value_counts().reset_index()
+    counts.columns = ["order_status", "count"]
+
+    fig = px.bar(
+        counts,
+        x="order_status",
+        y="count",
+        text="count",
+        title="Order Status (Latest Published Result per Order)"
+    )
+    fig.show()
+
+
+# -----------------------------
+# MAIN
+# -----------------------------
+def main():
+    print("Starting Results FINAL Flow... 🚀")
+
+    data = get_results_data()
+    df = prepare_results_df(data)
+
+    validate_results_df(df)
+
+    flow_1_critical_results(df)
+    flow_2_sla(df)
+    flow_3_staff(df)
+    flow_4_publish(df)
+    flow_5_order_status(df)
+
+    print("Results flow completed successfully 🎉")
+
 
 if __name__ == "__main__":
-     # request / Get / Read orders data API
-    results_data = get_results_data()
-
-     # Prepare and call ready data Pandas : cleanup / transform data adding / removing
-    results_df = prepare_results_df(results_data)
-
-
-     # Linked workflows (A -> B) Find critical cases / results display board & Check sla respected
-    critical_df = flow_1_critical_results_board(results_df)
-    flow_2_sla_check_for_critical(critical_df)
-    
-    # Capacity & finance boards
-    flow_5_lab_productivity(results_df)
+    main()
